@@ -9,3 +9,4 @@
 # "GZipResponder.__init__() missing 1 required keyword-only argument: 'thread_minimum_size'".
 # This exact pair is a known-good, coherent set.
 streamlit==1.61.0
+starlette==1.3.1

@@ -12,7 +12,7 @@ routing engine — so you can click through the whole flow with **no API key, no
 and no sensitive data**.
 
 > **Try it:** live demo coming soon — or run it locally in two minutes (see [Run it locally](#run-it-locally) below). <!-- TODO(deploy): replace this line with: **[Try the live demo](STREAMLIT_URL)** -->
-> **Read the thinking:** [Executive overview](docs/EXECUTIVE_OVERVIEW.md) · [One-page policy](docs/POLICY_ONE_PAGER.md) · [Use-case scenarios](docs/USE_CASE_SCENARIOS.md)
+> **Read the thinking:** [Executive overview](docs/EXECUTIVE_OVERVIEW.md) · [One-page policy](docs/POLICY_ONE_PAGER.md) · [Use-case scenarios](docs/USE_CASE_SCENARIOS.md) · [Evaluation results](docs/EVAL_RESULTS.md)
 
 ---
 
@@ -97,7 +97,7 @@ python3 streamlit_demo/demo_engine.py --wynn-sweep
 streamlit_demo/    the six-stage Streamlit app + the frozen replay data and masked images
 src/pipeline/      the real policy / routing / anomaly / validation engine the demo runs on
 src/config/        the versioned policy config, flag registry, and report schema
-docs/              executive overview, one-page policy, and use-case scenarios
+docs/              executive overview, one-page policy, use-case scenarios, and evaluation results
 ```
 
 The heavy build-time pieces (live OCR, the vision-model client, the evaluation harness) are

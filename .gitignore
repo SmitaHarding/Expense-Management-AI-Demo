@@ -15,6 +15,9 @@ env/
 *.pem
 .streamlit/secrets.toml
 
+# --- Real-PII eval detail reports (never ship — belt-and-suspenders) ---
+*.LOCAL.md
+
 # --- OS / editor cruft ---
 .DS_Store
 Thumbs.db
