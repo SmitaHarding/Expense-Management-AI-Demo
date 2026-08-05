@@ -3,4 +3,9 @@
 # The demo replays frozen reads (see streamlit_demo/demo_replay.json), so it runs
 # the real policy/routing engine live but needs NEITHER the OCR library (tesseract)
 # NOR the vision-model library (anthropic) at runtime — only Streamlit.
-streamlit>=1.30
+#
+# Pinned (not ">=") on purpose: an unpinned "streamlit>=1.30" let Streamlit Cloud's
+# resolver assemble a mismatched streamlit/starlette pair, which failed at boot with
+# "GZipResponder.__init__() missing 1 required keyword-only argument: 'thread_minimum_size'".
+# This exact pair is a known-good, coherent set.
+streamlit==1.61.0
