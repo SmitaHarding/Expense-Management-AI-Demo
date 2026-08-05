@@ -1,0 +1,280 @@
+{
+  "config_version": "0.9.6",
+  "effective_date": "2026-08-03",
+  "change_note": "v0.9.6 (2026-08-05, owner-approved policy change, CAT-08 v2): accommodation nights are now DERIVED from the folio's check-in/check-out read by both extraction paths (schema items[].check_in / check_out), replacing the v0.9.2 employee-entered nights -- which was a self-reported divisor with no cross-check and therefore a gaming lever (inflating nights lowers per-night below the $300 cap). Nights = check_out - check_in, trusted only when both readers agree on the range (D3: a disagreement reuses blocking extraction_mismatch, no new flag). Fallback when the folio prints no readable stay range (D1a): a conservative nights=1 divisor, evaluating the cap at the smallest plausible divisor so uncertainty errs toward human review, never toward silently clearing the cap. apply_accommodation_cap no longer reads the deprecated items[].nights (retained additively in the schema for audit/back-compat). Schema gained optional nullable items[].check_in / check_out. Flag registry UNCHANGED at 16 blocking + 4 informational (D3 reuse). registry_version moved to 0.9.6 in lockstep. v0.9.5 (2026-08-03, owner-approved policy change): manager auto-approval visibility (APR-07, new). Every report that auto-approves is now included in a periodic manager visibility digest -- notify-only, no action required, does not change routing and does not delay payment. New config block notifications.manager_auto_approve_visibility (enabled true, mode digest, cadence weekly, action_required false). This is a control, not a review: it closes the gap where money left the company on a clean report with no named human having visibility, while preserving the design benefit that managers only ACT on flagged reports (30-40% of volume) -- the digest is visibility over the auto-approved remainder, not a per-report approval request. Delivery is a config-declared behaviour executed by the notification integration outside the scoring engine, exactly as payment batching is declared in the payment block without the decision engine running ACH; no orchestrator, schema, or flag change. Flag registry unchanged at 16 blocking + 4 informational. registry_version moved to 0.9.5 in lockstep. v0.9.4 (2026-07-30, owner-approved build): human correction re-evaluation wired into the real pipeline (VER-03/REV-04, previously documented-not-built). New INFORMATIONAL flag field_corrected records any human amount correction with the actor role (approver/employee/fin_ops) and the (AI value -> human value) pair for the audit trail and REV-04 label. The already-registered BLOCKING flag correction_mismatch is now emitted: an EMPLOYEE amount correction whose value equals neither extraction path (exact to the cent) routes to review. A human correction NEVER clears a pre-existing extraction_mismatch (anti-gaming: a disagreeing receipt still routes to a human no matter what value is typed); the human_value is authoritative and re-runs all policy checks. No config parameters added; flag list only. Flag registry: 16 blocking + 4 informational (up from 16 + 3). registry_version moved to 0.9.4 in lockstep. v0.9.2 (2026-07-27, owner-approved policy change): (1) new accommodation per-night cap -- accommodation_cap.per_night_usd $300 including taxes, flat across all cities in v1 (high-cost-city tiers remain a v2 enhancement, same as per_diem). per-night = folio total / nights (nights derived from trip length in v1, since the item schema carries a single date, not a stay range -- documented approximation, errs toward review when a folio bundles incidentals). Over the cap raises new BLOCKING flag over_accommodation_cap, which via special_approval_flags routes manager THEN S&TP; the overage is NOT auto-excluded (unlike per_diem) -- a human decides, since accommodation overages are often legitimate (sold-out conference city). Flag registry: 16 blocking + 3 informational (up from 15 + 3). (2) auto-approve ceiling raised: auto_approve_report_max_usd $100 -> $200 and approval_matrix tier-1 boundary $100 -> $200 (lockstep -- both define the same auto band), auto_approve_rolling_30d_max_usd $300 -> $400. A blanket flat-ceiling raise beyond this was rejected; per-diem/team/client/accommodation caps and all blocking flags are unchanged, so raising the ceiling only lets slightly larger CLEAN reports auto-approve. Per-diem scope reconfirmed (no change): $75/day covers meal_individual only; meal_group is the separate $40/head control. registry_version moved to 0.9.2 in lockstep. v0.9.1 (2026-07-23, owner-approved policy change): dual_extract_agreement_fields narrowed from [amount, date, merchant] to [amount, date] -- merchant is no longer part of the dual-path auto-approval gate. Rationale: after the OCR field-picking + preprocessing fixes lifted OCR accuracy on the domestic corpus, merchant remained the weakest agreement field (OCR merchant ~58% vs amount/date higher), so requiring OCR/LLM merchant agreement was the dominant cap on the straight-through auto-approval rate while NOT protecting the financial decision (merchant is descriptive, not the amount owed). A receipt where the two readers disagree on merchant but agree on amount AND date now auto-approves; a wrong merchant is caught by employee attestation + the 5% post-approval audit (PAY-03), not a synchronous gate. Amount and date still gate exactly as before, so accuracy-on-auto-approved for the money field is unchanged. extraction_mismatch flag and its routing are unchanged in mechanism -- only the fields it checks changed (see validation.check_dual_path_agreement, which reads this list). No flag/tier/schema change; registry_version moved to 0.9.1 in lockstep (equality pin, no flag change). v0.9.0 (CAT-07, 2026-07-21): new blocking flag date_unverifiable added to the flags array below (see flag_registry.json for trigger/effect) -- fires when an item has no extractable date, across every category, forcing manager review regardless of amount. 2026-07-17 (doc-only, no value changes): remaining non_reimbursable_line_types entries (minibar, in_room_entertainment, spa, gym, personal_items) confirmed as settled v1 policy on the same terms as alcohol -- no finance/HR sign-off gate for any entry, all auto-excluded identically, none routed to review. per_diem and team_caps/client_entertainment_caps values confirmed via business/HR/S&TP sign-off. v0.8.0 (PRD v1.6): alcohol added to non_reimbursable_line_types, confirmed live v1 policy (no sign-off gate). v0.8.0 (PRD v1.7, same-day follow-up): per_diem enforcement now aggregates across trip-linked reports (T10b) -- see per_diem.enforcement_rule; new blocking flag supplemental_report_after_trip_approval added -- any report for a trip that already has an approved sibling report is forced to manager-level review regardless of amount, to discourage drip-fed partial submissions (confirmed decision, 2026-07-16) -- 14 blocking + 3 informational flags now. v0.7.0 (PRD v1.4): Slack-only intake (email fields removed, deeplink intake is v2); flat $75 per diem with day-level auto-cap (high-cost tiers moved to v2); approval matrix re-cut to $2,000/$5,000 boundaries; payment process defined (AP file, Monday 23:59 cut-off, finance-ops release, day-10 SLA watchdog); per_bucket_label_threshold set to 500; manager_mismatch flag retired for v1.",
+  "flag_registry_file": "flag_registry.json",
+  "base_currency": "USD",
+
+  "intake_channels": {
+    "primary": "slack",
+    "email_role": "disabled_v1_tokenized_deeplink_planned_v2",
+    "slack": {
+      "dm_only": true,
+      "reject_external_identities": true,
+      "delete_chat_copy_after_ingest": true,
+      "draft_idle_reminder_days": 7,
+      "slack_retention_days": 30,
+      "trip_header_fields": ["travel_location", "travel_start_date", "travel_end_date", "travel_reason"],
+      "approver_source": "hr_record_display_only"
+    }
+  },
+
+  "rounding": {
+    "currency_dp": 2,
+    "mode": "half_up",
+    "intermediate_dp": 4
+  },
+
+  "capture": {
+    "no_receipt_snippet_max_usd": 50.0,
+    "snippet_allowed_categories": ["travel", "meal_individual"],
+    "snippet_items_per_report": 2,
+    "accepted_attachment_types": ["jpeg", "jpg", "png", "heic", "pdf"],
+    "pending_completion_expiry_days": 14,
+    "phash_active_window_months": 24,
+    "registry_lookup_p95_ms": 200,
+    "dedup_blocking": false,
+    "dedup_must_complete_before": "verification_summary",
+    "image_quality": {
+      "min_short_side_px": 400,
+      "blur_laplacian_min": 100,
+      "glare_max_area_pct": 20,
+      "require_full_frame": true
+    }
+  },
+
+  "language_gate": {
+    "allowed_languages": ["en"],
+    "allowed_currencies": ["USD"],
+    "route_on_fail": "manual_intake_queue",
+    "fx_source_priority": ["card_statement", "documented_rate_transaction_date"],
+    "record_original_currency": true
+  },
+
+  "verification": {
+    "required": true,
+    "verification_expiry_days": 14,
+    "amount_correction_must_match_extraction": true,
+    "edit_conflict_policy": "version_stamp_reject_stale",
+    "attestation_invalidated_on_edit": true
+  },
+
+  "manual_queue": {
+    "manual_queue_sla_business_days": 3
+  },
+
+  "non_reimbursable_line_types": [
+    "minibar",
+    "in_room_entertainment",
+    "spa",
+    "gym",
+    "personal_items",
+    "alcohol"
+  ],
+
+  "pii_redaction": {
+    "redact_types": ["ssn", "tax_id", "credit_card_pan", "cardholder_name", "bank_account", "digital_wallet_id", "home_address", "date_of_birth", "gender_marker", "drivers_license_number", "email", "phone"],
+    "card_mask_policy": "last4_only",
+    "log_field_allowlist_enforced": true,
+    "non_customer_individuals_excluded": true,
+    "note": "cardholder_name (GR9), drivers_license_number (DR3), email/phone (found during Phase 1 build, gated to rental-agreement-style context per DR4) added 2026-07-14. bank_account and digital_wallet_id remain listed but unimplemented -- deferred to v2 per DR1, zero real evidence in the 31-receipt corpus. Image-level (pixel) PII in real receipt photos sent to Claude vision is NOT covered by this config -- see redact.py module docstring and README 'Known limitations'."
+  },
+
+  "extraction": {
+    "extraction_confidence_min": 0.85,
+    "categorization_confidence_min": 0.85,
+    "receipt_forgery_threshold": 0.7,
+    "schema_retry_limit": 1,
+    "dual_extraction": true,
+    "dual_extract_agreement_fields": ["amount", "date"],
+    "merchant_fuzzy_match_min": 0.85,
+    "llm_temperature": 0,
+    "llm_sees_ocr_output": false,
+    "amount_suffix_whitelist": ["A", "B"],
+    "allow_discount_lines": true,
+    "reimburse_basis": "net_paid",
+    "combined_line_policy": "no_split_dominant_category",
+    "pinned_models": ["ocr_engine", "llm_extractor", "categorizer", "forgery_scorer"],
+    "date_resolution": {
+      "travel": "service_dates",
+      "accommodation": "stay_range",
+      "conference_fees": "event_dates_else_transaction",
+      "meal_individual": "receipt_date",
+      "meal_group": "receipt_date",
+      "client_entertainment": "receipt_date",
+      "other": "receipt_date"
+    }
+  },
+
+  "categories": [
+    "travel",
+    "accommodation",
+    "meal_individual",
+    "meal_group",
+    "client_entertainment",
+    "conference_fees",
+    "other"
+  ],
+  "catch_all_category": "other",
+
+  "per_diem": {
+    "meals_incidentals_usd": 75.0,
+    "enforcement_mode": "auto_cap_day_level_trip_linked",
+    "enforcement_rule": "reimburse min(day_meal_total, max(0, meals_incidentals_usd - prior_approved_usd)); excess excluded; employee informed at receipt time; over_per_diem flag is informational",
+    "trip_linked_aggregation": "T10b (v0.8.0): day_meal_total aggregates across every report sharing the same trip_id, not just the current report. prior_approved_usd only accumulates from reports whose report_status is 'approved' -- a sibling report still in human review never suppresses another report's allowance (confirmed decision, 2026-07-16). Separately: ANY report for a trip that already has an approved sibling report -- regardless of whether the per-diem cap is actually breached -- gets the supplemental_report_after_trip_approval blocking flag, forcing manager review rather than auto-approval, to discourage drip-fed partial submissions. See policy_engine.py::apply_per_diem_cap and orchestrator.py's trip_reports registry.",
+    "applies_to": "meals_and_incidentals_only_travel_items_excluded",
+    "high_cost_city_tiers": "v2_enhancement",
+    "travel_window_grace_days": 1
+  },
+
+  "team_caps": {
+    "meal_group_per_head_usd": 40.0,
+    "client_entertainment_per_head_usd": 50.0
+  },
+
+  "accommodation_cap": {
+    "per_night_usd": 300.0,
+    "includes_taxes": true,
+    "basis": "folio_total_div_nights",
+    "nights_source": "folio_check_in_out_v2",
+    "note": "v0.9.6 (2026-08-05, CAT-08 v2): $300/night incl taxes, flat (high-cost-city tiers are v2). per-night = folio total / nights, where nights = check_out - check_in read from the folio face by BOTH extraction paths (schema items[].check_in / check_out) and trusted only when the two readers agree on the stay range. This REPLACES the v0.9.2 employee-entered nights (which was a self-reported divisor with no cross-check -- a gaming lever, since inflating nights lowers per-night below the cap). D1a fallback: when the folio dates can't be established (folio prints no stay range, or a reader has only one endpoint) the divisor falls to a conservative nights=1, so the cap is evaluated at the smallest plausible divisor -- it never silently clears the cap; a genuinely over-cap folio still routes to a human who verifies the true dates against the image. D3: a reader disagreement on the stay range reuses the existing blocking flag extraction_mismatch (no new flag) and also falls to the nights=1 divisor. Bundled folio incidentals (parking, resort fees) still count toward the per-night figure, so it errs toward review, never toward silently overpaying; room-line itemization is a v2 refinement. Over the cap raises blocking over_accommodation_cap; via special_approval_flags the report routes manager THEN S&TP. Overage is NOT auto-excluded (unlike per_diem) -- approvers decide, since a sold-out conference city is a legitimate reason. The deprecated employee-entered items[].nights is retained in the schema for backward compatibility/audit but is no longer read by apply_accommodation_cap. Values set against 2025 citywide ADRs (NYC ~334, SF ~226, LA ~200, Seattle ~180; avg ~235) plus business-district headroom."
+  },
+
+  "approval_matrix": [
+    {
+      "max_report_total_usd": 200.0,
+      "clean_route": ["auto"],
+      "flagged_route": ["manager"],
+      "description": "Auto-approve if: total < $200, rolling 30d < $400, zero blocking flags, anomaly < 0.6 (v0.9.2: ceiling raised from $100/$300)"
+    },
+    {
+      "max_report_total_usd": 2000.0,
+      "clean_route": ["manager"],
+      "flagged_route": ["manager"],
+      "description": "$100 up to and including $2K: Manager approval only (ceiling raised from $1K in v0.6.1; pending finance sign-off)"
+    },
+    {
+      "max_report_total_usd": 5000.0,
+      "clean_route": ["manager", "finance"],
+      "flagged_route": ["manager", "finance"],
+      "description": "Above $2K up to and including $5K: Manager + Finance"
+    },
+    {
+      "max_report_total_usd": null,
+      "clean_route": ["manager", "finance", "stp_approver"],
+      "flagged_route": ["manager", "finance", "stp_approver"],
+      "description": "$5K+: Manager + Finance + S&TP"
+    }
+  ],
+  "special_approval_flags": {
+    "over_team_cap": ["stp_approver"],
+    "over_client_cap": ["stp_approver"],
+    "over_accommodation_cap": ["manager", "stp_approver"]
+  },
+  "approval_policy_note": "S&TP is involved when policy is violated: any over_team_cap flag, any over_client_cap flag, any over_accommodation_cap flag (v0.9.2 -- routes manager then S&TP), or report total > $5K. S&TP does not review all reports, only policy-violation cases.",
+  "approval_sla": {
+    "approver_response_business_days": 3,
+    "reminder_business_days": 2,
+    "escalation_mode": "reroute",
+    "max_escalation_hops": 2,
+    "final_escalation": "finance_ops_queue"
+  },
+
+  "payment": {
+    "approval_to_payment_sla_days": 14,
+    "sla_alert_days": 10,
+    "batch_cadence": "weekly",
+    "batch_cutoff": "monday_23:59_local",
+    "batch_day": "tuesday",
+    "execution": "ap_payment_file_ach",
+    "release_control": "finance_ops_one_click_after_batch_summary_review",
+    "bank_processing_days_min_max": [3, 5],
+    "holiday_rule": "next_business_day",
+    "failed_disbursement": "notify_and_rebatch_after_correction_sla_clock_paused",
+    "open_item": "confirm_ap_system_supports_weekly_tuesday_ach_run"
+  },
+
+  "anomaly_cold_start": {
+    "min_observation_reports": 5,
+    "history_signals_neutral_below_min": ["employee_baseline_deviation", "peer_group_deviation", "merchant_novelty"]
+  },
+
+  "latency_budgets": {
+    "receipt_ack_ms": 2000,
+    "quality_gate_verdict_ms": 5000,
+    "extraction_live_feedback_p95_ms": 30000,
+    "verification_card_render_ms": 10000
+  },
+
+  "auto_approval": {
+    "auto_approve_report_max_usd": 200.0,
+    "auto_approve_rolling_30d_max_usd": 400.0,
+    "anomaly_score_threshold": 0.6,
+    "audit_sample_rate": 0.05
+  },
+
+  "anomaly_signals": {
+    "employee_baseline_deviation": 0.2,
+    "peer_group_deviation": 0.15,
+    "merchant_novelty": 0.1,
+    "round_number_bias": 0.1,
+    "threshold_proximity": 0.2,
+    "snippet_usage_rate": 0.1,
+    "weekend_holiday_claims": 0.05,
+    "submission_velocity": 0.1
+  },
+
+  "review": {
+    "review_sla_business_days": 3,
+    "channel": "sso_portal",
+    "email_role": "notification_only",
+    "reject_return_reason_required": true
+  },
+
+  "retention": {
+    "evidence_years": 7,
+    "audit_log_years": 7,
+    "ops_log_months": 12,
+    "evidence_vault_worm": true
+  },
+
+  "improvement_loop": {
+    "promotion": "single_click_signoff",
+    "per_bucket_label_threshold": 500,
+    "eval_gates": ["golden_dataset_per_bucket_accuracy", "zero_bucket_regression", "red_team_pass"],
+    "kpi": "other_bucket_rate_monthly"
+  },
+
+  "notifications": {
+    "manager_auto_approve_visibility": {
+      "enabled": true,
+      "mode": "digest",
+      "cadence": "weekly",
+      "action_required": false,
+      "note": "APR-07 (v0.9.5): every auto-approved report is included in a weekly manager visibility digest. Notify-only -- the manager is informed, not asked to act; auto-approval routing and the payment SLA are unchanged. A financial control so money never leaves on a clean report with zero named-human visibility, without re-adding the per-report review load the system removed. Delivered by the notification integration outside the scoring engine (same pattern as the payment block); the decision engine emits no new field for it."
+    }
+  },
+
+  "flags": [
+    "duplicate_receipt",
+    "low_confidence_extraction",
+    "possible_injection",
+    "suspect_receipt",
+    "over_per_diem",
+    "over_team_cap",
+    "over_client_cap",
+    "duplicate_team_claim",
+    "outside_travel_window",
+    "excluded_no_proof",
+    "threshold_gaming",
+    "extraction_mismatch",
+    "arithmetic_check_failed",
+    "other_bucket_review",
+    "correction_mismatch",
+    "non_reimbursable_item",
+    "supplemental_report_after_trip_approval",
+    "date_unverifiable",
+    "over_accommodation_cap",
+    "field_corrected"
+  ]
+}

@@ -1,0 +1,21 @@
+{
+  "_note": "Default trip context + per-receipt labels for the Step-4 demo engine. In the Streamlit UI (Step 5) the user enters trip dates/location/spend-history and confirms/corrects each category at Stage 4. trip_start/trip_end are left null here so the engine auto-brackets each set's window around its receipts; set them to override.",
+  "trip_id": "TRIP-DEMO-001",
+  "employee_id": "emp_demo",
+  "manager_id": "mgr_demo",
+  "trip_start": null,
+  "trip_end": null,
+  "location": {"city": "Las Vegas", "country": "US"},
+  "purpose": "Client onsite + team offsite",
+  "spend_history": {
+    "typical_monthly_usd": 1800,
+    "employee_history_totals": [130, 120, 95, 260, 450, 400, 500, 210],
+    "peer_group_avg": 320,
+    "known_merchants": ["Denny's Restaurant #0141", "Shake Shack", "Panda Express", "Cafe Mason", "Shell", "Wynn/Encore"],
+    "rolling_30d_auto_approved_usd": 0
+  },
+  "receipt_labels": {
+    "panda_1": {"category_override": "meal_individual"},
+    "wynn_20231209_014": {"category_override": "meal_group", "attendees": 11}
+  }
+}

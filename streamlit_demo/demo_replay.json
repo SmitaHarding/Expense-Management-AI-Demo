@@ -1,0 +1,362 @@
+{
+  "generated": "2026-07-30",
+  "config_version": "0.9.3",
+  "gate_fields": [
+    "amount",
+    "date"
+  ],
+  "ocr_engine": "tesseract (local capture, deterministic)",
+  "notes": "OCR/redaction/injection/blur captured live from the real pipeline; LLM read + AI category are the frozen 2026-07-24 values unless --live. Only masked images + this JSON deploy.",
+  "sets": [
+    {
+      "set_id": "clean_trip",
+      "title": "Small clean client visit",
+      "narrative": "auto_approve",
+      "receipts": [
+        "dennys_20231209_004",
+        "panda_1"
+      ]
+    },
+    {
+      "set_id": "clean_multiday",
+      "title": "Clean multi-day trip",
+      "narrative": "manager_review",
+      "receipts": [
+        "shakeshack_20231209_002",
+        "wynn_20231209_014"
+      ]
+    },
+    {
+      "set_id": "messy_trip",
+      "title": "Messy trip - low confidence / disagreement",
+      "narrative": "escalated_review",
+      "receipts": [
+        "cafemason_20231005_009",
+        "hilton_2",
+        "citycar1",
+        "shell_20231005_003"
+      ]
+    }
+  ],
+  "receipts": {
+    "dennys_20231209_004": {
+      "display_image": "streamlit_demo/assets/receipts/dennys_20231209_004.png",
+      "currency": "USD",
+      "ocr": {
+        "amount": 58.44,
+        "amount_raw": "58.44",
+        "date": "2023-11-28",
+        "merchant": "Denny's Restaurant #0141",
+        "confidence": 0.832
+      },
+      "llm": {
+        "amount": 58.44,
+        "date": "2023-11-28",
+        "merchant": "Denny's Restaurant #0141"
+      },
+      "agreement": {
+        "amount": true,
+        "date": true
+      },
+      "redaction": {
+        "types_redacted": [],
+        "counts": {}
+      },
+      "injection_suspects": [],
+      "ai_category": "meal_individual",
+      "quality": {
+        "blur_score": 4126.8,
+        "short_side_px": 446,
+        "passed": true
+      },
+      "sources": {
+        "ocr": "local_capture",
+        "llm": "live_capture"
+      }
+    },
+    "shakeshack_20231209_002": {
+      "display_image": "streamlit_demo/assets/receipts/shakeshack_20231209_002.png",
+      "currency": "USD",
+      "ocr": {
+        "amount": 50.33,
+        "amount_raw": "50.33",
+        "date": "2023-11-28",
+        "merchant": "SHAKE SHACK",
+        "confidence": 0.93
+      },
+      "llm": {
+        "amount": 50.33,
+        "date": "2023-11-28",
+        "merchant": "SHAKE SHACK"
+      },
+      "agreement": {
+        "amount": true,
+        "date": true
+      },
+      "redaction": {
+        "types_redacted": [
+          "cardholder_name",
+          "credit_card_pan"
+        ],
+        "counts": {
+          "credit_card_pan": 1,
+          "cardholder_name": 1
+        }
+      },
+      "injection_suspects": [],
+      "ai_category": "meal_individual",
+      "quality": {
+        "blur_score": 3637.0,
+        "short_side_px": 444,
+        "passed": true
+      },
+      "sources": {
+        "ocr": "local_capture",
+        "llm": "live_capture"
+      }
+    },
+    "panda_1": {
+      "display_image": "streamlit_demo/assets/receipts/panda_1.png",
+      "currency": "USD",
+      "ocr": {
+        "amount": 19.07,
+        "amount_raw": "19.07",
+        "date": "2023-11-30",
+        "merchant": "vx PURCHASE 3x",
+        "confidence": 0.707
+      },
+      "llm": {
+        "amount": 19.07,
+        "date": "2023-11-30",
+        "merchant": "Panda Express #2468"
+      },
+      "agreement": {
+        "amount": true,
+        "date": true
+      },
+      "redaction": {
+        "types_redacted": [
+          "cardholder_name",
+          "credit_card_pan"
+        ],
+        "counts": {
+          "credit_card_pan": 1,
+          "cardholder_name": 1
+        }
+      },
+      "injection_suspects": [],
+      "ai_category": "other",
+      "quality": {
+        "blur_score": 2270.6,
+        "short_side_px": 444,
+        "passed": true
+      },
+      "sources": {
+        "ocr": "local_capture",
+        "llm": "live_capture"
+      }
+    },
+    "cafemason_20231005_009": {
+      "display_image": "streamlit_demo/assets/receipts/cafemason_20231005_009.png",
+      "currency": "USD",
+      "ocr": {
+        "amount": 32.59,
+        "amount_raw": "32.59",
+        "date": "2023-08-29",
+        "merchant": "Cafe Mason",
+        "confidence": 0.863
+      },
+      "llm": {
+        "amount": 32.59,
+        "date": "2023-08-29",
+        "merchant": "Cafe Mason"
+      },
+      "agreement": {
+        "amount": true,
+        "date": true
+      },
+      "redaction": {
+        "types_redacted": [],
+        "counts": {}
+      },
+      "injection_suspects": [],
+      "ai_category": "meal_individual",
+      "quality": {
+        "blur_score": 5324.3,
+        "short_side_px": 445,
+        "passed": true
+      },
+      "sources": {
+        "ocr": "local_capture",
+        "llm": "live_capture"
+      }
+    },
+    "wynn_20231209_014": {
+      "display_image": "streamlit_demo/assets/receipts/wynn_20231209_014.png",
+      "currency": "USD",
+      "ocr": {
+        "amount": 402.34,
+        "amount_raw": "402.34",
+        "date": "2023-12-01",
+        "merchant": "Wynn/Encore",
+        "confidence": 0.9
+      },
+      "llm": {
+        "amount": 402.34,
+        "date": "2023-12-01",
+        "merchant": "SW Steakhouse"
+      },
+      "agreement": {
+        "amount": true,
+        "date": true
+      },
+      "redaction": {
+        "types_redacted": [],
+        "counts": {}
+      },
+      "injection_suspects": [],
+      "ai_category": "accommodation",
+      "quality": {
+        "blur_score": 4248.4,
+        "short_side_px": 448,
+        "passed": true
+      },
+      "sources": {
+        "ocr": "local_capture",
+        "llm": "live_capture"
+      }
+    },
+    "hilton_2": {
+      "display_image": "streamlit_demo/assets/receipts/hilton_2.png",
+      "currency": "USD",
+      "ocr": {
+        "amount": 198435.0,
+        "amount_raw": "1,984,35",
+        "date": "2023-08-27",
+        "check_in": "2023-08-27",
+        "check_out": "2023-08-31",
+        "merchant": "PARC 55 SAN FRANCISCO a Hilton Hotel",
+        "confidence": 0.698
+      },
+      "llm": {
+        "amount": -1984.35,
+        "date": "2023-08-27",
+        "check_in": "2023-08-27",
+        "check_out": "2023-08-31",
+        "merchant": "PARC 55 SAN FRANCISCO a Hilton Hotel"
+      },
+      "agreement": {
+        "amount": false,
+        "date": true,
+        "stay_range": true
+      },
+      "redaction": {
+        "types_redacted": [
+          "cardholder_name",
+          "home_address",
+          "phone"
+        ],
+        "counts": {
+          "cardholder_name": 11,
+          "home_address": 1,
+          "phone": 1
+        }
+      },
+      "injection_suspects": [],
+      "ai_category": "accommodation",
+      "quality": {
+        "blur_score": 2412.6,
+        "short_side_px": 1220,
+        "passed": true
+      },
+      "sources": {
+        "ocr": "local_capture",
+        "llm": "live_capture"
+      }
+    },
+    "citycar1": {
+      "display_image": "streamlit_demo/assets/receipts/citycar1.png",
+      "currency": "USD",
+      "ocr": {
+        "amount": 17.9,
+        "amount_raw": "17.90",
+        "date": "2023-08-31",
+        "merchant": ". 349 Mason Street Rental Agreement #:139432",
+        "confidence": 0.819
+      },
+      "llm": {
+        "amount": 184.67,
+        "date": "2023-08-31",
+        "merchant": "City Rent-A-Car"
+      },
+      "agreement": {
+        "amount": false,
+        "date": true
+      },
+      "redaction": {
+        "types_redacted": [
+          "date_of_birth",
+          "drivers_license_number",
+          "email",
+          "phone"
+        ],
+        "counts": {
+          "drivers_license_number": 1,
+          "date_of_birth": 1,
+          "email": 1,
+          "phone": 1
+        }
+      },
+      "injection_suspects": [],
+      "ai_category": "other",
+      "quality": {
+        "blur_score": 4412.6,
+        "short_side_px": 1216,
+        "passed": true
+      },
+      "sources": {
+        "ocr": "local_capture",
+        "llm": "live_capture"
+      }
+    },
+    "shell_20231005_003": {
+      "display_image": "streamlit_demo/assets/receipts/shell_20231005_003.png",
+      "currency": "USD",
+      "ocr": {
+        "amount": 28.32,
+        "amount_raw": "28.32",
+        "date": null,
+        "merchant": "SHELL",
+        "confidence": 0.863
+      },
+      "llm": {
+        "amount": 28.32,
+        "date": "2023-09-01",
+        "merchant": "Shell"
+      },
+      "agreement": {
+        "amount": true,
+        "date": false
+      },
+      "redaction": {
+        "types_redacted": [
+          "credit_card_pan"
+        ],
+        "counts": {
+          "credit_card_pan": 2
+        }
+      },
+      "injection_suspects": [],
+      "ai_category": "travel",
+      "quality": {
+        "blur_score": 4601.7,
+        "short_side_px": 446,
+        "passed": true
+      },
+      "sources": {
+        "ocr": "local_capture",
+        "llm": "live_capture"
+      }
+    }
+  }
+}

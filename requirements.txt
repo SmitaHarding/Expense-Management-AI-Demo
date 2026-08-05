@@ -1,0 +1,6 @@
+# Runtime dependency for the deployed demo.
+#
+# The demo replays frozen reads (see streamlit_demo/demo_replay.json), so it runs
+# the real policy/routing engine live but needs NEITHER the OCR library (tesseract)
+# NOR the vision-model library (anthropic) at runtime — only Streamlit.
+streamlit>=1.30

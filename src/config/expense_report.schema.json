@@ -1,0 +1,289 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "expense_report.schema.json",
+  "title": "ExpenseReport",
+  "description": "Structured output of Stage 2 (Extract), consumed by all downstream stages. This is the only interface between the LLM extractor and the rest of the system. Schema v0.9.0 (2026-07-21, EXT-12/CAT-07): item.date is now nullable -- an item whose date could not be extracted by either path carries date: null and the new blocking date_unverifiable flag, rather than a schema violation forcing a fabricated value. Schema v0.8.0 (2026-07-16, aligned to requirements v0.8.0): trip_id and per_diem_position.prior_approved_usd added for trip-linked per-diem aggregation across multiple reports (T10b). Schema v0.7.0 (2026-07-13, aligned to requirements v0.7.0): Slack-only intake (email conditional and manager_mismatch removed), per_diem_position added for day-level auto-cap audit trail.",
+  "type": "object",
+  "required": [
+    "report_id",
+    "schema_version",
+    "submission",
+    "trip",
+    "items",
+    "flags",
+    "processing"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "report_id": { "type": "string", "format": "uuid" },
+    "schema_version": { "type": "string" },
+    "trip_id": { "type": "string", "description": "T10b/B3 (v0.8): identifies the trip this report belongs to, for per-diem aggregation across multiple reports on the same trip. Defaults to report_id when a trip is only ever claimed in a single report (all pre-T10b fixtures behave unchanged)." },
+
+    "submission": {
+      "type": "object",
+      "required": ["received_at", "sender_email", "sender_verified", "employee_id", "manager_of_record_id"],
+      "additionalProperties": false,
+      "properties": {
+        "received_at": { "type": "string", "format": "date-time" },
+        "channel": { "type": "string", "enum": ["slack"], "description": "SLK-01 (v0.7): Slack is the only v1 intake channel; enum extends additively when v2 email deeplink intake lands — downstream stages are channel-blind" },
+        "sender_email": { "type": "string", "format": "email" },
+        "sender_verified": { "type": "boolean", "description": "Slack workspace SSO identity resolved to active employee in HR directory (CAP-SEC-01, v0.7)" },
+        "employee_id": { "type": "string" },
+        "manager_of_record_id": { "type": "string", "description": "Resolved from HR system; the actual approver (APR-02). stated_manager fields retired with email intake (CAP-SEC-02, v0.7); permanently retired -- will not return in v2 (confirmed 2026-07-17, v2 email intake will not carry a stated-manager field)" }
+      }
+    },
+
+    "trip": {
+      "type": "object",
+      "required": ["location", "start_date", "end_date", "reason"],
+      "additionalProperties": false,
+      "properties": {
+        "location": { "type": "string" },
+        "start_date": { "type": "string", "format": "date" },
+        "end_date": { "type": "string", "format": "date" },
+        "reason": { "type": "string" },
+        "high_cost_location": { "type": "boolean", "default": false, "description": "Unused in v1 (flat $75 per diem); retained additively for v2 high-cost city tiers" }
+      }
+    },
+
+    "items": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "required": ["item_id", "date", "merchant", "amount", "currency", "category", "proof", "status", "confidence"],
+        "additionalProperties": false,
+        "properties": {
+          "item_id": { "type": "string" },
+          "date": { "type": ["string", "null"], "format": "date", "description": "CAT-07 (v0.9.0): null when neither extraction path could find a date on the receipt at all (not merely hard to read) -- pairs with the date_unverifiable blocking flag, which forces manager review; downstream date-dependent checks (travel window, per-diem day-bucketing) skip null-date items rather than guessing." },
+          "merchant": { "type": "string" },
+          "amount": { "type": "number", "description": "Positive for all lines except line_type=discount, which must be negative (EXT-05b); enforced by conditional below" },
+          "currency": { "type": "string", "const": "USD", "description": "v1 is USD-only; field exists so v2 multi-currency is additive" },
+          "category": {
+            "type": "string",
+            "enum": ["travel", "accommodation", "meal_individual", "meal_group", "client_entertainment", "conference_fees", "other"]
+          },
+          "receipt_ref": {
+            "type": "string",
+            "description": "EXT-08: parent attachment for multi-line receipts; lines sharing a receipt_ref must sum to the receipt total"
+          },
+          "line_type": {
+            "type": "string",
+            "description": "EXT-08/09: folio line descriptor (e.g. room_rate, breakfast, minibar); checked against non_reimbursable_line_types. EXT-05b (v0.6): 'discount' marks a negative line (promo, coupon); reimbursement is always net-paid"
+          },
+          "check_in": {
+            "type": ["string", "null"],
+            "format": "date",
+            "description": "CAT-08 v2 (v0.9.6): accommodation folio check-in date, read from the folio face by BOTH extraction paths (OCR and vision). With check_out it derives the per-night divisor (nights = check_out - check_in), replacing the employee-entered nights so the divisor can no longer be self-reported. Trusted only when both readers agree on the stay range; a disagreement reuses the blocking extraction_mismatch flag (no new flag) and the cap falls to the conservative nights=1 divisor. Ignored for non-accommodation items."
+          },
+          "check_out": {
+            "type": ["string", "null"],
+            "format": "date",
+            "description": "CAT-08 v2 (v0.9.6): accommodation folio check-out date; pairs with check_in (see check_in). nights = check_out - check_in, floored at 1."
+          },
+          "nights": {
+            "type": "integer",
+            "minimum": 1,
+            "description": "DEPRECATED for the cap divisor as of CAT-08 v2 (v0.9.6): nights is now derived from folio check_in/check_out read by both paths, not self-reported. Retained additively for backward compatibility and audit; apply_accommodation_cap no longer reads it. Ignored for non-accommodation items."
+          },
+          "combined_line": {
+            "type": "boolean",
+            "default": false,
+            "description": "EXT-08a (v0.6): line the receipt does not itemize (e.g. 'Room rate + Breakfast'); never split, categorized by dominant component"
+          },
+          "amount_raw": {
+            "type": "string",
+            "description": "EXT-05a (v0.6): verbatim amount string pre-normalization (e.g. '105.00a'); preserved for audit and corpus analysis"
+          },
+          "proof": {
+            "type": "object",
+            "required": ["type"],
+            "additionalProperties": false,
+            "properties": {
+              "type": { "type": "string", "enum": ["receipt", "card_snippet", "none"] },
+              "attachment_ref": { "type": "string" },
+              "sha256": { "type": "string" },
+              "perceptual_hash": { "type": "string" },
+              "forgery_risk_score": { "type": "number", "minimum": 0, "maximum": 1 }
+            }
+          },
+          "status": {
+            "type": "string",
+            "enum": ["included", "excluded_no_proof", "excluded_non_reimbursable", "pending_review", "withdrawn"],
+            "description": "CAP-04: no-proof items stay in the record but are never paid. EXT-09: non-reimbursable folio lines recorded, never paid. CAP-08: withdrawn items retained for audit, excluded from all calculations."
+          },
+          "validation": {
+            "type": "object",
+            "description": "Deterministic post-extraction checks (EXT-04, EXT-05)",
+            "additionalProperties": false,
+            "properties": {
+              "dual_extract_agreement": { "type": "boolean" },
+              "arithmetic_pass": { "type": "boolean" }
+            }
+          },
+          "attendees": {
+            "type": "array",
+            "description": "Required for meal_group and client_entertainment (CAP-06, CAT-03). Employee emails for internal attendees; 'Name — Organization' strings allowed for external attendees.",
+            "items": { "type": "string" }
+          },
+          "confidence": {
+            "type": "object",
+            "required": ["extraction", "categorization"],
+            "additionalProperties": false,
+            "properties": {
+              "extraction": { "type": "number", "minimum": 0, "maximum": 1 },
+              "categorization": { "type": "number", "minimum": 0, "maximum": 1 }
+            }
+          },
+          "correction": {
+            "type": "object",
+            "description": "v0.9.4 (VER-03/REV-04): an in-place human correction to an extracted field. human_value is authoritative and re-runs all policy checks; ai_value is preserved for audit and as the REV-04 labeled pair. Presence also emits informational field_corrected; an employee amount correction matching neither extraction path emits blocking correction_mismatch.",
+            "required": ["source", "field", "ai_value", "human_value", "actor_id", "at"],
+            "additionalProperties": false,
+            "properties": {
+              "source": { "type": "string", "enum": ["approver", "employee", "fin_ops"] },
+              "field": { "type": "string", "enum": ["amount", "date", "category"] },
+              "ai_value": { "description": "original extracted value (number for amount, string for date/category)" },
+              "human_value": { "description": "authoritative human-keyed value used downstream" },
+              "actor_id": { "type": "string", "description": "authenticated identity of the correcting human" },
+              "at": { "type": "string", "description": "ISO-8601 timestamp of the correction" }
+            }
+          }
+        },
+        "allOf": [
+          {
+            "if": { "properties": { "category": { "enum": ["meal_group", "client_entertainment"] } } },
+            "then": { "required": ["attendees"], "properties": { "attendees": { "minItems": 1 } } }
+          },
+          {
+            "if": { "required": ["line_type"], "properties": { "line_type": { "const": "discount" } } },
+            "then": { "properties": { "amount": { "exclusiveMaximum": 0 } } },
+            "else": { "properties": { "amount": { "exclusiveMinimum": 0 } } }
+          }
+        ]
+      }
+    },
+
+    "flags": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["flag", "item_id", "detail"],
+        "additionalProperties": false,
+        "properties": {
+          "flag": {
+            "type": "string",
+            "enum": ["duplicate_receipt", "low_confidence_extraction", "possible_injection", "suspect_receipt", "over_per_diem", "over_team_cap", "over_client_cap", "duplicate_team_claim", "outside_travel_window", "excluded_no_proof", "threshold_gaming", "extraction_mismatch", "arithmetic_check_failed", "other_bucket_review", "correction_mismatch", "non_reimbursable_item", "supplemental_report_after_trip_approval", "date_unverifiable", "over_accommodation_cap", "field_corrected"]
+          },
+          "item_id": { "type": ["string", "null"], "description": "null = report-level flag" },
+          "detail": { "type": "string" }
+        }
+      }
+    },
+
+    "injection_suspects": {
+      "type": "array",
+      "description": "Verbatim instruction-like text found in inputs (EXT-SEC-02). Data only, never executed.",
+      "items": { "type": "string" }
+    },
+
+    "processing": {
+      "type": "object",
+      "required": ["config_version", "totals"],
+      "additionalProperties": false,
+      "properties": {
+        "config_version": { "type": "string" },
+        "model_version": { "type": "string", "description": "EVAL-01: pinned extractor model version" },
+        "prompt_version": { "type": "string", "description": "EVAL-01: pinned prompt version" },
+        "report_status": {
+          "type": "string",
+          "enum": ["submitted", "pending_completion", "pending_verification", "in_review", "approved", "rejected", "withdrawn", "paid"],
+          "description": "CAP-05/CAP-08/VER-01 lifecycle"
+        },
+        "verification": {
+          "type": "object",
+          "description": "VER-01..04: employee attestation and guarded corrections",
+          "additionalProperties": false,
+          "properties": {
+            "status": { "type": "string", "enum": ["pending", "confirmed", "expired"] },
+            "confirmed_at": { "type": "string", "format": "date-time" },
+            "corrections": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "required": ["item_id", "field", "ai_value", "employee_value"],
+                "additionalProperties": false,
+                "properties": {
+                  "item_id": { "type": "string" },
+                  "field": { "type": "string" },
+                  "ai_value": { "type": "string" },
+                  "employee_value": { "type": "string" }
+                }
+              }
+            }
+          }
+        },
+        "pii_redaction": {
+          "type": "object",
+          "description": "CAP-SEC-05: counts/types only, never redacted values",
+          "additionalProperties": false,
+          "properties": {
+            "applied": { "type": "boolean" },
+            "redaction_counts": {
+              "type": "object",
+              "additionalProperties": { "type": "integer", "minimum": 0 }
+            }
+          }
+        },
+        "anomaly_factors": {
+          "type": "object",
+          "description": "AUD-01b: per-signal contributions to anomaly_score",
+          "additionalProperties": { "type": "number" }
+        },
+        "per_diem_position": {
+          "type": "object",
+          "description": "CAT-02 (v0.7); T10b (v0.8) added trip-linked aggregation. Day-level per diem auto-cap audit trail. Key = calendar date (YYYY-MM-DD). Present for every day with meal_individual spend; excluded_overage > 0 implies an over_per_diem informational flag.",
+          "additionalProperties": {
+            "type": "object",
+            "required": ["meal_total_usd", "allowance_usd", "prior_approved_usd", "prior_approved_from_reports", "reimbursed_usd", "excluded_overage_usd"],
+            "additionalProperties": false,
+            "properties": {
+              "meal_total_usd": { "type": "number", "minimum": 0 },
+              "allowance_usd": { "type": "number", "minimum": 0 },
+              "prior_approved_usd": { "type": "number", "minimum": 0, "description": "T10b: meal total already reimbursed by other *approved* reports for this trip/day, captured as of when this report was processed (replayability snapshot, EVAL-01). Only approved reports contribute -- a sibling report still in human review never suppresses this one's allowance. 0 when this is the only report for the trip/day, or no sibling had been approved yet." },
+              "prior_approved_from_reports": {
+                "type": "array",
+                "description": "T10b audit trail: which specific prior report(s) contributed to prior_approved_usd, and how much each contributed. Empty when prior_approved_usd is 0.",
+                "items": {
+                  "type": "object",
+                  "required": ["report_id", "amount_usd"],
+                  "additionalProperties": false,
+                  "properties": {
+                    "report_id": { "type": "string" },
+                    "amount_usd": { "type": "number", "minimum": 0 }
+                  }
+                }
+              },
+              "reimbursed_usd": { "type": "number", "minimum": 0, "description": "min(meal_total_usd, max(0, allowance_usd - prior_approved_usd))" },
+              "excluded_overage_usd": { "type": "number", "minimum": 0, "description": "meal_total_usd - reimbursed_usd; counted in totals.excluded_usd" }
+            }
+          }
+        },
+        "totals": {
+          "type": "object",
+          "required": ["included_usd", "excluded_usd"],
+          "additionalProperties": false,
+          "properties": {
+            "included_usd": { "type": "number", "minimum": 0, "description": "Recomputed from included items (PAY-04), never taken from employee's stated total" },
+            "excluded_usd": { "type": "number", "minimum": 0 }
+          }
+        },
+        "anomaly_score": { "type": "number", "minimum": 0, "maximum": 1 },
+        "route": {
+          "type": "array",
+          "items": { "type": "string", "enum": ["auto", "manager", "finance", "stp_approver"] }
+        }
+      }
+    }
+  }
+}
