@@ -11,7 +11,7 @@ receipt images and frozen extraction reads, and replays them through the *real* 
 routing engine — so you can click through the whole flow with **no API key, no file upload,
 and no sensitive data**.
 
-> **Try it:** live demo coming soon — or run it locally in two minutes (see [Run it locally](#run-it-locally) below). <!-- TODO(deploy): replace this line with: **[Try the live demo](STREAMLIT_URL)** -->
+> **Try it:** run it locally in two minutes (see [Run it locally](#run-it-locally) below). There's no hosted demo by design — it replays frozen reads fully offline, with no API key, no uploads, and no sensitive data.
 > **Read the thinking:** [Executive overview](docs/EXECUTIVE_OVERVIEW.md) · [One-page policy](docs/POLICY_ONE_PAGER.md) · [Use-case scenarios](docs/USE_CASE_SCENARIOS.md) · [Evaluation results](docs/EVAL_RESULTS.md)
 
 ---

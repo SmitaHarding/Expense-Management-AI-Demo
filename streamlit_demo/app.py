@@ -431,3 +431,13 @@ elif stage == 5:
 
 st.divider()
 nav()
+
+# Persistent footer: one unobtrusive way out for a demo-only viewer to reach the repo,
+# the design docs, and the evaluation results — without putting any eval numbers in the
+# interactive flow itself (that stays clean by design).
+st.divider()
+st.caption(
+    "This demo replays frozen OCR/vision reads through the *real* policy engine — "
+    "no API key, no uploads, no sensitive data. Full design & "
+    "[evaluation results](https://github.com/SmitaHarding/expense-management-ai-demo) on GitHub."
+)

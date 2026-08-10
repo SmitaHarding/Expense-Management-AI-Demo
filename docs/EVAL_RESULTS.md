@@ -12,6 +12,10 @@ guarantee. A production pilot would re-measure on a much larger corpus. That cav
 the system is built so that when it's *uncertain*, it routes to a human — so being provisional is
 safe, not dangerous.
 
+*Measured on `expense-ai-demo` @ `8f8387c`, policy config 0.9.6, 2026-08-10 — one full
+round: the deterministic conformance suite plus real Claude vision on all four corpora
+(synthetic, domestic, EUR, srd_usd).*
+
 ---
 
 ## Track A — pipeline conformance (deterministic)
@@ -88,6 +92,10 @@ among those the amount is right **100%** of the time. That ~55% is an *upper bou
 the full policy pipeline — anomaly scoring, the per-report and rolling-30-day ceilings, unverifiable
 dates, and every blocking flag — can only send **more** receipts to a human, never fewer. The system
 is deliberately biased toward review; the automation rate is a floor on safety, not a target to max.
+
+(EUR receipts auto-approve at 0%: weak OCR on EUR formatting means the two readers rarely
+agree, so nearly everything routes to a human. That's the safety design working, not a
+failure — and provisional at n = 12 regardless.)
 
 ---
 
