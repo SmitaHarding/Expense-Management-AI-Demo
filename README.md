@@ -11,7 +11,7 @@ receipt images and frozen extraction reads, and replays them through the *real* 
 routing engine — so you can click through the whole flow with **no API key, no file upload,
 and no sensitive data**.
 
-> **Try it:** run it locally in two minutes (see [Run it locally](#run-it-locally) below). There's no hosted demo by design — it replays frozen reads fully offline, with no API key, no uploads, and no sensitive data.
+> **Try it:** [Open the hosted demo](https://expense-management-ai-demo.streamlit.app/) — it replays frozen receipt reads through the *real, live* policy and routing engine, so it needs no API key, no uploads, and exposes no sensitive data. Prefer to run it yourself? See [Run it locally](#run-it-locally) below.
 > **Read the thinking:** [Executive overview](docs/EXECUTIVE_OVERVIEW.md) · [One-page policy](docs/POLICY_ONE_PAGER.md) · [Use-case scenarios](docs/USE_CASE_SCENARIOS.md) · [Evaluation results](docs/EVAL_RESULTS.md)
 
 ---
@@ -75,8 +75,8 @@ sensitive is machine-readable before it shipped. Unmasked originals are never in
 ## Run it locally
 
 ```bash
-git clone <your-fork-url>
-cd expense-ai-demo-public
+git clone https://github.com/SmitaHarding/expense-management-ai-demo.git
+cd expense-management-ai-demo
 python3 -m venv .venv && source .venv/bin/activate
 pip install -r requirements.txt
 streamlit run streamlit_demo/app.py
